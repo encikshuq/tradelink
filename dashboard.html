@@ -284,8 +284,18 @@ monitorRef.on("value", snap=>{
   const signal = d.mt5_signal || "DISCONNECTED";
   const trades = Number(d.buy_count || 0) + Number(d.sell_count || 0);
 
-  setText("clientName", d.name || "Client Name");
-  setText("clientId", d.client_id || clientId);
+  userRef.on("value", snap => {
+
+  const u = snap.val() || {};
+
+  setText("clientName", u.name || "Client Name");
+
+  setText(
+    "clientId",
+    clientId + "-" + (u.package || "BASIC")
+  );
+
+});
   setMoney("balance", d.balance);
   setText("equity", money(d.equity));
   setPL("floating", d.floating_pl);
@@ -351,6 +361,9 @@ historyRef.on("value", snap=>{
   const data = snap.val() || {};
   historyItems = Object.keys(data).sort().map(k=>({date:k,dateObj:parseDateKey(k),balance:Number(data[k].balance || 0),equity:Number(data[k].equity || 0),floating_pl:Number(data[k].floating_pl || 0)}));
   renderHistory();
+  const userRef = db.ref("TradeLink/users/" + clientId);
+
+  
 });
 </script>
 </body>
