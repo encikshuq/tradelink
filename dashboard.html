@@ -202,91 +202,136 @@ const db = firebase.database();
 const clientId = "TL0001";
 const monitorRef = db.ref("TradeLink/clients/" + clientId + "/monitor");
 const historyRef = db.ref("TradeLink/clients/" + clientId + "/history");
-  const userRef = db.ref("TradeLink/users/" + clientId);
+const userRef = db.ref("TradeLink/users/" + clientId);
 
-function money(v){ return Number(v || 0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }
-function setText(id,val){ const el=document.getElementById(id); if(el) el.textContent=val; }
-function setPL(id,val){
-  const el=document.getElementById(id); if(!el) return;
-  el.dataset.raw = money(val);
-  el.textContent = el.dataset.masked === '1' ? '*******' : money(val);
-  el.classList.toggle('maskedText', el.dataset.masked === '1');
-  el.style.color = Number(val) < 0 ? "var(--red)" : "var(--green)";
+function money(v){
+  return Number(v || 0).toLocaleString("en-US",{
+    minimumFractionDigits:2,
+    maximumFractionDigits:2
+  });
 }
+
+function setText(id,val){
+  const el = document.getElementById(id);
+  if(el) el.textContent = val;
+}
+
 function setMoney(id,val){
-  const el=document.getElementById(id); if(!el) return;
+  const el = document.getElementById(id);
+  if(!el) return;
   el.dataset.raw = money(val);
-  el.textContent = el.dataset.masked === '1' ? '*******' : money(val);
-  el.classList.toggle('maskedText', el.dataset.masked === '1');
+  el.textContent = el.dataset.masked === "1" ? "*******" : money(val);
+  el.classList.toggle("maskedText", el.dataset.masked === "1");
 }
+
+function setPL(id,val){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const n = Number(val || 0);
+  el.dataset.raw = money(n);
+  el.textContent = el.dataset.masked === "1" ? "*******" : money(n);
+  el.classList.toggle("maskedText", el.dataset.masked === "1");
+  el.style.color = n < 0 ? "var(--red)" : "var(--green)";
+}
+
 function updateEye(btnId, masked){
   const btn = document.getElementById(btnId);
-  if(btn) btn.textContent = masked ? '🙈' : '👁';
+  if(btn) btn.textContent = masked ? "🙈" : "👁";
 }
+
 function toggleMoney(id, btnId){
-  const el=document.getElementById(id); if(!el) return;
-  el.dataset.masked = el.dataset.masked === '1' ? '0' : '1';
-  const masked = el.dataset.masked === '1';
-  el.textContent = masked ? '*******' : (el.dataset.raw || el.textContent);
-  el.classList.toggle('maskedText', masked);
+  const el = document.getElementById(id);
+  if(!el) return;
+
+  el.dataset.masked = el.dataset.masked === "1" ? "0" : "1";
+  const masked = el.dataset.masked === "1";
+
+  el.textContent = masked ? "*******" : (el.dataset.raw || "0.00");
+  el.classList.toggle("maskedText", masked);
+
   if(btnId) updateEye(btnId, masked);
 }
+
+function toggleSummary(){
+  const ids = ["rangePL","totalProfit","totalLoss"];
+  const first = document.getElementById("rangePL");
+  const nextMasked = !(first && first.dataset.masked === "1");
+
+  ids.forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.dataset.masked = nextMasked ? "1" : "0";
+    el.textContent = nextMasked ? "*******" : (el.dataset.raw || "0.00");
+    el.classList.toggle("maskedText", nextMasked);
+  });
+
+  updateEye("eyeSummary", nextMasked);
+}
+
 function updateSignal(signal){
   const pill = document.getElementById("signalPill");
   const text = document.getElementById("mt5Signal");
+
   if(text) text.textContent = signal;
   if(!pill) return;
+
   pill.classList.remove("autoOff","disconnected");
-  if(signal === "AUTO OFF") pill.classList.add("autoOff");
-  else if(signal !== "CONNECTED") pill.classList.add("disconnected");
+
+  if(signal === "AUTO OFF"){
+    pill.classList.add("autoOff");
+  }else if(signal !== "CONNECTED"){
+    pill.classList.add("disconnected");
+  }
 }
-function toggleSummary(){
-  ['rangePL','totalProfit','totalLoss'].forEach(id=>toggleMoney(id));
-  const first = document.getElementById('rangePL');
-  updateEye('eyeSummary', first && first.dataset.masked === '1');
-}
+
 function openSettings(){
   alert("Settings page akan kita sambung selepas dashboard siap.");
 }
+
 function logout(){
   localStorage.removeItem("clientId");
   localStorage.removeItem("clientKey");
   window.location.href = "index.html";
 }
 
-document.addEventListener('DOMContentLoaded',()=>{
-  updateEye('eyeBalance', true);
-  updateEye('eyeSummary', true);
-});
-
 let historyItems = [];
-let activeRange = 'day';
+let activeRange = "day";
+
 const ctx = document.getElementById("liveChart");
 const liveChart = new Chart(ctx,{
   type:"line",
-  data:{ labels:[], datasets:[
-    { label:"Balance %", data:[], borderWidth:2, tension:.38, pointRadius:3 },
-    { label:"Equity %", data:[], borderWidth:2, tension:.38, pointRadius:3 }
-  ]},
+  data:{
+    labels:[],
+    datasets:[
+      { label:"Balance %", data:[], borderWidth:2, tension:.38, pointRadius:3 },
+      { label:"Equity %", data:[], borderWidth:2, tension:.38, pointRadius:3 }
+    ]
+  },
   options:{
     responsive:true,
     maintainAspectRatio:false,
     interaction:{mode:"index",intersect:false},
-    plugins:{ legend:{labels:{color:'#b9c3d2', boxWidth:10, usePointStyle:true}}, tooltip:{callbacks:{label:(ctx)=>ctx.dataset.label+': '+Number(ctx.raw||0).toFixed(2)+'%'}} },
+    plugins:{
+      legend:{labels:{color:"#b9c3d2", boxWidth:10, usePointStyle:true}},
+      tooltip:{callbacks:{label:(ctx)=>ctx.dataset.label + ": " + Number(ctx.raw || 0).toFixed(2) + "%"}}
+    },
     scales:{
-      x:{ ticks:{display:false}, grid:{color:"rgba(255,255,255,.035)", drawTicks:false} },
-      y:{ ticks:{color:'#8d99aa', callback:(v)=>v+'%'}, grid:{color:"rgba(255,255,255,.035)", drawTicks:false}, border:{display:false} }
+      x:{ticks:{display:false}, grid:{color:"rgba(255,255,255,.035)", drawTicks:false}},
+      y:{ticks:{color:"#8d99aa", callback:(v)=>v + "%"}, grid:{color:"rgba(255,255,255,.035)", drawTicks:false}, border:{display:false}}
     }
   }
 });
 
-const userRef = db.ref("TradeLink/users/" + clientId);
+monitorRef.on("value", snap=>{
+  const d = snap.val() || {};
+  const signal = d.mt5_signal || "DISCONNECTED";
+  const trades = Number(d.buy_count || 0) + Number(d.sell_count || 0);
 
-});
   setMoney("balance", d.balance);
   setText("equity", money(d.equity));
   setPL("floating", d.floating_pl);
   updateSignal(signal);
+
   setText("buyCount", d.buy_count || 0);
   setText("sellCount", d.sell_count || 0);
   setText("activePair", d.active_pair || d.symbol || d.pair || "XAUUSD");
@@ -296,56 +341,112 @@ const userRef = db.ref("TradeLink/users/" + clientId);
   setText("kpiTrades", trades);
 });
 
+userRef.on("value", snap=>{
+  const u = snap.val() || {};
+  setText("clientName", u.name || "Client Name");
+  setText("clientId", clientId + "-" + (u.package || "BASIC"));
+});
+
+historyRef.on("value", snap=>{
+  const data = snap.val() || {};
+
+  historyItems = Object.keys(data).sort().map(k=>({
+    date:k,
+    dateObj:parseDateKey(k),
+    balance:Number(data[k].balance || 0),
+    equity:Number(data[k].equity || 0),
+    floating_pl:Number(data[k].floating_pl || 0)
+  }));
+
+  renderHistory();
+});
+
 function parseDateKey(key){
-  const p = String(key).split('-');
-  if(p.length === 3) return new Date(Number(p[0]), Number(p[1])-1, Number(p[2]));
+  const p = String(key).split("-");
+  if(p.length === 3) return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
   return new Date(key);
 }
+
 function getFilteredHistory(){
   if(!historyItems.length) return [];
-  const latest = historyItems[historyItems.length-1].dateObj;
+
+  const latest = historyItems[historyItems.length - 1].dateObj;
   const start = new Date(latest);
-  if(activeRange === 'day') start.setDate(start.getDate()-1);
-  else if(activeRange === 'week') start.setDate(start.getDate()-7);
-  else start.setMonth(start.getMonth()-1);
+
+  if(activeRange === "day") start.setDate(start.getDate() - 1);
+  else if(activeRange === "week") start.setDate(start.getDate() - 7);
+  else start.setMonth(start.getMonth() - 1);
+
   return historyItems.filter(x=>x.dateObj >= start);
 }
+
 function percentSeries(items, field){
   if(!items.length) return [];
   const base = Number(items[0][field] || 0);
-  return items.map(x=> base ? ((Number(x[field] || 0)-base)/base)*100 : 0);
+  return items.map(x=> base ? ((Number(x[field] || 0) - base) / base) * 100 : 0);
 }
+
 function calcPL(items){
-  let rangePL = 0, totalProfit = 0, totalLoss = 0;
-  if(items.length >= 2) rangePL = Number(items[items.length-1].balance || 0) - Number(items[0].balance || 0);
-  for(let i=1;i<items.length;i++){
+  let rangePL = 0;
+  let totalProfit = 0;
+  let totalLoss = 0;
+
+  if(items.length >= 2){
+    rangePL = Number(items[items.length - 1].balance || 0) - Number(items[0].balance || 0);
+  }
+
+  for(let i=1; i<items.length; i++){
     const diff = Number(items[i].balance || 0) - Number(items[i-1].balance || 0);
     if(diff >= 0) totalProfit += diff;
     else totalLoss += diff;
   }
+
   return {rangePL,totalProfit,totalLoss};
 }
+
 function renderHistory(){
   const items = getFilteredHistory();
+
   liveChart.data.labels = items.map(x=>x.date);
-  liveChart.data.datasets[0].data = percentSeries(items,'balance');
-  liveChart.data.datasets[1].data = percentSeries(items,'equity');
+  liveChart.data.datasets[0].data = percentSeries(items,"balance");
+  liveChart.data.datasets[1].data = percentSeries(items,"equity");
   liveChart.update();
+
   const pl = calcPL(items);
-  setText('rangeLabel', activeRange === 'day' ? 'Daily P/L' : activeRange === 'week' ? 'Weekly P/L' : 'Monthly P/L');
-  setPL('rangePL', pl.rangePL);
-  setPL('totalProfit', pl.totalProfit);
-  setPL('totalLoss', pl.totalLoss);
+
+  setText("rangeLabel", activeRange === "day" ? "Daily P/L" : activeRange === "week" ? "Weekly P/L" : "Monthly P/L");
+  setPL("rangePL", pl.rangePL);
+  setPL("totalProfit", pl.totalProfit);
+  setPL("totalLoss", pl.totalLoss);
 }
+
 function changeRange(range){
   activeRange = range;
-  document.querySelectorAll('.rangeBtn').forEach(b=>b.classList.remove('active'));
-  const btn = document.getElementById(range === 'day' ? 'btnDay' : range === 'week' ? 'btnWeek' : 'btnMonth');
-  if(btn) btn.classList.add('active');
-  
-  
 
-  
+  document.querySelectorAll(".rangeBtn").forEach(btn=>btn.classList.remove("active"));
+
+  const activeBtn = document.getElementById(
+    range === "day" ? "btnDay" : range === "week" ? "btnWeek" : "btnMonth"
+  );
+
+  if(activeBtn) activeBtn.classList.add("active");
+
+  renderHistory();
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  const balance = document.getElementById("balance");
+  const rangePL = document.getElementById("rangePL");
+  const totalProfit = document.getElementById("totalProfit");
+  const totalLoss = document.getElementById("totalLoss");
+
+  if(balance) balance.dataset.masked = "1";
+  if(rangePL) rangePL.dataset.masked = "1";
+  if(totalProfit) totalProfit.dataset.masked = "1";
+  if(totalLoss) totalLoss.dataset.masked = "1";
+
+  updateEye("eyeBalance", true);
+  updateEye("eyeSummary", true);
 });
 </script>
 </body>
