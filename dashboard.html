@@ -61,8 +61,18 @@ body:before{
   box-shadow:var(--shadow);display:flex;align-items:center;justify-content:space-between;padding:18px 22px;gap:16px
 }
 .titleBlock h2{font-size:24px;font-weight:750;letter-spacing:.01em}.titleBlock p{font-size:13px;color:var(--muted);margin-top:5px}
-.statusPill{display:flex;align-items:center;gap:10px;border:1px solid rgba(48,211,148,.24);background:rgba(48,211,148,.08);color:#bdf7de;padding:11px 15px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.topActions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.statusPill{display:flex;align-items:center;gap:10px;border:1px solid rgba(48,211,148,.24);background:rgba(48,211,148,.08);color:#bdf7de;padding:11px 15px;border-radius:999px;font-size:12px;font-weight:800;white-space:nowrap;letter-spacing:.04em}
+.actionBtn{border:1px solid var(--line);background:rgba(255,255,255,.035);color:var(--soft);padding:11px 14px;border-radius:999px;font-size:12px;font-weight:800;text-decoration:none;cursor:pointer;transition:.25s ease;white-space:nowrap}
+.actionBtn:hover{border-color:rgba(200,169,104,.32);color:var(--gold2);background:rgba(200,169,104,.08)}
+.logoutBtn{color:#ffd0d0;border-color:rgba(239,100,100,.22)}
 .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 18px var(--green)}
+.statusPill.autoOff{border-color:rgba(141,153,170,.25);background:rgba(141,153,170,.08);color:#c2cad6}.statusPill.autoOff .dot{background:#8d99aa;box-shadow:0 0 14px #8d99aa}
+.statusPill.disconnected{border-color:rgba(239,100,100,.28);background:rgba(239,100,100,.08);color:#ffd0d0}.statusPill.disconnected .dot{background:var(--red);box-shadow:0 0 14px var(--red)}
+.eyeBtn{border:0;background:transparent;color:var(--muted);font-size:15px;cursor:pointer;padding:2px 4px;border-radius:8px}.eyeBtn:hover{color:var(--gold2);background:rgba(255,255,255,.04)}
+.miniTop{display:flex;align-items:center;justify-content:space-between;gap:8px}.miniTop span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}.miniTop .eyeBtn{font-size:14px;margin-top:-2px}
+.cardTitleFlex{display:flex;align-items:center;justify-content:space-between;gap:8px}.masked{filter:blur(7px);user-select:none}.masked::selection{background:transparent}
+.hiddenCard{display:none!important}.chartMasked canvas{filter:blur(8px);opacity:.45}.usdPrefix:before{content:"USD ";font-size:.72em;color:var(--muted);font-weight:800;margin-right:2px}
 .grid{display:grid;grid-template-columns:1.25fr .75fr;gap:18px}
 .hero{
   position:relative;overflow:hidden;min-height:250px;border:1px solid rgba(200,169,104,.18);border-radius:30px;
@@ -77,7 +87,7 @@ body:before{
 .chartWrap{height:330px}.footer{color:rgba(185,195,210,.55);font-size:12px;text-align:center;padding:8px 0 3px}
 .mobileBrand{display:none}.skeleton{opacity:.62}
 @media(max-width:1050px){.app{grid-template-columns:1fr}.sidebar{display:none}.mobileBrand{display:block}.grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:640px){.app{padding:12px;gap:12px}.topbar{border-radius:22px;padding:17px;align-items:flex-start;flex-direction:column}.titleBlock h2{font-size:21px}.hero{border-radius:24px;padding:20px;min-height:auto}.clientName{font-size:25px}.heroStats{grid-template-columns:1fr;margin-top:22px}.kpis{grid-template-columns:1fr;gap:12px}.panel{border-radius:24px;padding:17px}.chartWrap{height:260px}.statusPill{width:100%;justify-content:center}.mini strong,.kpi strong{font-size:22px}}
+@media(max-width:640px){.app{padding:12px;gap:12px}.topbar{border-radius:22px;padding:17px;align-items:flex-start;flex-direction:column}.topActions{width:100%;justify-content:space-between}.actionBtn{flex:1;text-align:center;padding:11px 10px}.titleBlock h2{font-size:21px}.hero{border-radius:24px;padding:20px;min-height:auto}.clientName{font-size:25px}.heroStats{grid-template-columns:1fr;margin-top:22px}.kpis{grid-template-columns:1fr;gap:12px}.panel{border-radius:24px;padding:17px}.chartWrap{height:260px}.statusPill{width:100%;justify-content:center}.mini strong,.kpi strong{font-size:22px}}
 </style>
 </head>
 <body>
@@ -109,28 +119,32 @@ body:before{
         <h2>Smart Trading Dashboard</h2>
         <p>Live MT5 account monitoring, performance history and position exposure.</p>
       </div>
-      <div class="statusPill"><i class="dot"></i><span id="mt5Signal">CONNECTED</span></div>
+      <div class="topActions">
+        <div class="statusPill" id="signalPill"><span>MT5 Signal</span><i class="dot"></i><span id="mt5Signal">CONNECTED</span></div>
+        <a class="actionBtn" href="controlpanel.html">Control Panel</a>
+        <button class="actionBtn" onclick="openSettings()">Settings</button>
+        <button class="actionBtn logoutBtn" onclick="logout()">Logout</button>
+      </div>
     </section>
 
     <section class="grid">
       <div class="hero">
-        <div class="label">Client Portfolio</div>
+        <div class="cardTitleFlex"><div class="label">Client Portfolio</div></div>
         <div class="clientName" id="clientName">Ahmad Danial</div>
         <div class="clientId" id="clientId">TL0001-BASIC</div>
         <div class="heroStats">
-          <div class="mini"><span>Balance</span><strong id="balance">0.00</strong></div>
-          <div class="mini" style="display:none;">
-  <span>Equity</span>
-  <strong id="equity">0.00</strong>
-</div>
-          <div class="mini"><span>Floating P/L</span><strong id="floating" class="profit">0.00</strong></div>
+          <div class="mini">
+            <div class="miniTop"><span>Balance</span><button class="eyeBtn" onclick="toggleMask('balance')" title="Hide / show balance">👁</button></div>
+            <strong id="balance" class="usdPrefix">0.00</strong>
+          </div>
+          <div class="mini hiddenCard"><span>Equity</span><strong id="equity">0.00</strong></div>
+          <div class="mini"><span>Floating P/L</span><strong id="floating" class="profit usdPrefix">0.00</strong></div>
         </div>
       </div>
 
       <div class="panel">
         <div class="panelHead"><h3>Account Status</h3><span id="lastUpdate">--</span></div>
         <div class="signalBox">
-          <div class="signalRow"><span>MT5 Signal</span><strong id="mt5Signal2" class="ok">CONNECTED</strong></div>
           <div class="signalRow"><span>Buy Position</span><strong id="buyCount" class="gold">0</strong></div>
           <div class="signalRow"><span>Sell Position</span><strong id="sellCount" class="danger">0</strong></div>
           <div class="signalRow"><span>Alert Signal</span><strong class="gold">STANDBY</strong></div>
@@ -139,15 +153,15 @@ body:before{
     </section>
 
     <section class="kpis">
-      <div class="kpi"><span>Total Balance</span><strong id="kpiBalance">0.00</strong><small>Current account capital</small></div>
-      <div class="kpi"><span>Total Equity</span><strong id="kpiEquity">0.00</strong><small>Real-time account value</small></div>
-      <div class="kpi"><span>Floating Risk</span><strong id="kpiFloating">0.00</strong><small>Open position exposure</small></div>
+      <div class="kpi"><span>Floating Risk</span><strong id="kpiFloating" class="usdPrefix">0.00</strong><small>Open position exposure</small></div>
       <div class="kpi"><span>Open Trades</span><strong id="kpiTrades">0</strong><small>Buy + sell positions</small></div>
+      <div class="kpi"><span>Buy Position</span><strong id="kpiBuy">0</strong><small>Total active buy entries</small></div>
+      <div class="kpi"><span>Sell Position</span><strong id="kpiSell">0</strong><small>Total active sell entries</small></div>
     </section>
 
     <section class="panel">
-      <div class="panelHead"><h3>Performance History</h3><span>Balance vs Equity</span></div>
-      <div class="chartWrap"><canvas id="liveChart"></canvas></div>
+      <div class="panelHead"><h3>Performance History</h3><button class="eyeBtn" onclick="toggleChart()" title="Hide / show performance">👁</button></div>
+      <div class="chartWrap" id="chartWrap"><canvas id="liveChart"></canvas></div>
     </section>
 
     <div class="footer">TradeLink Manager By Encik Shuq © 2026</div>
@@ -173,9 +187,30 @@ function setPL(id,val){
   el.textContent = money(val);
   el.style.color = Number(val) < 0 ? "var(--red)" : "var(--green)";
 }
-function signalClass(el, signal){
-  if(!el) return;
-  el.className = signal === "CONNECTED" ? "ok" : (signal === "AUTO OFF" ? "gold" : "danger");
+function updateSignal(signal){
+  const pill = document.getElementById("signalPill");
+  const text = document.getElementById("mt5Signal");
+  if(text) text.textContent = signal;
+  if(!pill) return;
+  pill.classList.remove("autoOff","disconnected");
+  if(signal === "AUTO OFF") pill.classList.add("autoOff");
+  else if(signal !== "CONNECTED") pill.classList.add("disconnected");
+}
+function toggleMask(id){
+  const el = document.getElementById(id);
+  if(el) el.classList.toggle("masked");
+}
+function toggleChart(){
+  const el = document.getElementById("chartWrap");
+  if(el) el.classList.toggle("chartMasked");
+}
+function openSettings(){
+  alert("Settings page akan kita sambung selepas dashboard siap.");
+}
+function logout(){
+  localStorage.removeItem("clientId");
+  localStorage.removeItem("clientKey");
+  window.location.href = "index.html";
 }
 
 const ctx = document.getElementById("liveChart");
@@ -189,10 +224,10 @@ const liveChart = new Chart(ctx,{
     responsive:true,
     maintainAspectRatio:false,
     interaction:{mode:"index",intersect:false},
-    plugins:{ legend:{labels:{color:"#b9c3d2", boxWidth:10, usePointStyle:true}} },
+    plugins:{ legend:{display:false}, tooltip:{enabled:false} },
     scales:{
-      x:{ ticks:{color:"#8d99aa"}, grid:{color:"rgba(255,255,255,.045)"} },
-      y:{ ticks:{color:"#8d99aa"}, grid:{color:"rgba(255,255,255,.045)"} }
+      x:{ ticks:{display:false}, grid:{color:"rgba(255,255,255,.035)", drawTicks:false} },
+      y:{ ticks:{display:false}, grid:{color:"rgba(255,255,255,.035)", drawTicks:false}, border:{display:false} }
     }
   }
 });
@@ -207,18 +242,15 @@ monitorRef.on("value", snap=>{
   setText("balance", money(d.balance));
   setText("equity", money(d.equity));
   setPL("floating", d.floating_pl);
-  setText("mt5Signal", signal);
-  setText("mt5Signal2", signal);
+  updateSignal(signal);
   setText("buyCount", d.buy_count || 0);
   setText("sellCount", d.sell_count || 0);
   setText("lastUpdate", d.last_update || "--");
 
-  setText("kpiBalance", money(d.balance));
-  setText("kpiEquity", money(d.equity));
   setPL("kpiFloating", d.floating_pl);
   setText("kpiTrades", trades);
-
-  signalClass(document.getElementById("mt5Signal2"), signal);
+  setText("kpiBuy", d.buy_count || 0);
+  setText("kpiSell", d.sell_count || 0);
 });
 
 historyRef.on("value", snap=>{
@@ -232,4 +264,3 @@ historyRef.on("value", snap=>{
 </script>
 </body>
 </html>
-
