@@ -1,1 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>TradeLink Manager | Dashboard</title>
 
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root{
+  --bg:#07090d;
+  --panel:#0e1219;
+  --panel2:#121722;
+  --card:#10151f;
+  --line:rgba(255,255,255,.075);
+  --text:#eef3fb;
+  --muted:#8d99aa;
+  --soft:#b9c3d2;
+  --gold:#c8a968;
+  --gold2:#f1d997;
+  --green:#30d394;
+  --red:#ef6464;
+  --cyan:#73d7ff;
+  --shadow:0 28px 70px rgba(0,0,0,.48);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+body{
+  overflow-x:hidden;
+  background:
+    radial-gradient(circle at 15% 12%, rgba(200,169,104,.12), transparent 30%),
+    radial-gradient(circle at 85% 22%, rgba(115,215,255,.08), transparent 28%),
+    linear-gradient(135deg,#07090d 0%,#090c12 44%,#050609 100%);
+}
+body:before{
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.22;
+  background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);
+  background-size:52px 52px;
+  mask-image:radial-gradient(circle at 50% 18%, black, transparent 72%);
+}
+.app{display:grid;grid-template-columns:280px 1fr;min-height:100vh;padding:22px;gap:22px}
+.sidebar{
+  position:sticky;top:22px;height:calc(100vh - 44px);border:1px solid var(--line);border-radius:28px;
+  background:linear-gradient(180deg,rgba(18,23,34,.92),rgba(9,12,18,.86));
+  box-shadow:var(--shadow);padding:22px;backdrop-filter:blur(18px);display:flex;flex-direction:column;justify-content:space-between;
+}
+.brand{padding:8px 2px 24px;border-bottom:1px solid var(--line)}
+.brand .mark{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--gold),#6d5626);display:grid;place-items:center;color:#07090d;font-weight:900;margin-bottom:14px;box-shadow:0 0 28px rgba(200,169,104,.2)}
+.brand h1{font-size:23px;letter-spacing:.08em;font-weight:800;line-height:1.05}
+.brand p{color:var(--muted);font-size:12px;margin-top:7px;letter-spacing:.04em}
+.nav{display:grid;gap:10px;margin-top:22px}
+.nav a{padding:14px 15px;border-radius:16px;text-decoration:none;color:var(--soft);font-size:13px;border:1px solid transparent;background:rgba(255,255,255,.018);transition:.25s ease}
+.nav a:hover{color:var(--gold2);border-color:rgba(200,169,104,.22);background:rgba(200,169,104,.075)}
+.nav a.active{color:var(--gold2);border-color:rgba(200,169,104,.26);background:linear-gradient(90deg,rgba(200,169,104,.12),rgba(255,255,255,.02))}
+.sideFoot{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font-size:12px;line-height:1.55}
+.main{min-width:0;display:flex;flex-direction:column;gap:18px}
+.topbar{
+  min-height:78px;border:1px solid var(--line);border-radius:26px;background:rgba(14,18,27,.72);backdrop-filter:blur(18px);
+  box-shadow:var(--shadow);display:flex;align-items:center;justify-content:space-between;padding:18px 22px;gap:16px
+}
+.titleBlock{display:flex;align-items:center;gap:13px}.topLogo{width:38px;height:38px;border-radius:13px;background:linear-gradient(135deg,var(--gold),#6d5626);display:grid;place-items:center;color:#07090d;font-weight:950;box-shadow:0 0 24px rgba(200,169,104,.18);letter-spacing:.03em;flex:0 0 auto}.titleBlock h2{font-size:30px;font-weight:850;letter-spacing:.015em;display:flex;align-items:baseline;gap:8px}.titleBlock h2 small{font-size:11px;color:var(--muted);letter-spacing:.12em;font-weight:850;text-transform:uppercase}.titleBlock p{display:none}
+.topActions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:flex-end}
+.statusPill{display:flex;align-items:center;gap:10px;border:1px solid rgba(48,211,148,.24);background:rgba(48,211,148,.08);color:#bdf7de;padding:11px 15px;border-radius:999px;font-size:12px;font-weight:800;white-space:nowrap;letter-spacing:.04em}
+.actionBtn{border:1px solid var(--line);background:rgba(255,255,255,.035);color:var(--soft);padding:11px 14px;border-radius:999px;font-size:12px;font-weight:800;text-decoration:none;cursor:pointer;transition:.25s ease;white-space:nowrap}
+.actionBtn:hover{border-color:rgba(200,169,104,.32);color:var(--gold2);background:rgba(200,169,104,.08)}
+.logoutBtn{color:#ffd0d0;border-color:rgba(239,100,100,.22)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 18px var(--green)}
+.statusPill.autoOff{border-color:rgba(141,153,170,.25);background:rgba(141,153,170,.08);color:#c2cad6}.statusPill.autoOff .dot{background:#8d99aa;box-shadow:0 0 14px #8d99aa}
+.statusPill.disconnected{border-color:rgba(239,100,100,.28);background:rgba(239,100,100,.08);color:#ffd0d0}.statusPill.disconnected .dot{background:var(--red);box-shadow:0 0 14px var(--red)}
+.eyeBtn{border:0;background:transparent;color:var(--muted);font-size:15px;cursor:pointer;padding:2px 4px;border-radius:8px}.eyeBtn:hover{color:var(--gold2);background:rgba(255,255,255,.04)}
+.miniTop{display:flex;align-items:center;justify-content:space-between;gap:8px}.miniTop span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}.miniTop .eyeBtn{font-size:14px;margin-top:-2px}
+.cardTitleFlex{display:flex;align-items:center;justify-content:space-between;gap:8px}.masked{filter:blur(7px);user-select:none}.masked::selection{background:transparent}
+.hiddenCard{display:none!important}.chartMasked canvas{filter:blur(8px);opacity:.45}.usdPrefix:before{content:"USD ";font-size:.72em;color:var(--muted);font-weight:800;margin-right:2px}
+.grid{display:grid;grid-template-columns:1.25fr .75fr;gap:18px}
+.hero{
+  position:relative;overflow:hidden;min-height:250px;border:1px solid rgba(200,169,104,.18);border-radius:30px;
+  background:linear-gradient(135deg,rgba(22,28,40,.95),rgba(10,13,19,.92));box-shadow:var(--shadow);padding:26px
+}
+.hero:after{content:"";position:absolute;right:-90px;top:-120px;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(200,169,104,.19),transparent 62%)}
+.label{font-size:11px;color:var(--muted);letter-spacing:.16em;text-transform:uppercase;font-weight:800}.clientName{font-size:32px;font-weight:800;margin-top:15px;letter-spacing:-.02em}.clientId{color:var(--gold2);font-weight:700;margin-top:8px;font-size:14px}.heroStats{display:grid;grid-template-columns:1fr;gap:12px;margin-top:32px;position:relative;z-index:2}.mini{border:1px solid var(--line);background:rgba(255,255,255,.035);border-radius:20px;padding:16px}.mini span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}.mini strong{display:block;font-size:20px;margin-top:8px;white-space:nowrap}.mini .profit{color:var(--green)}.portfolioPair{display:grid;grid-template-columns:1fr 1fr;gap:12px}.balanceHead{display:flex;align-items:center;justify-content:flex-start;gap:6px}.balanceHead .eyeBtn{font-size:13px;padding:0 3px}.maskedText{letter-spacing:.08em;color:var(--soft)!important}.filterBar{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.rangeBtn{border:1px solid var(--line);background:rgba(255,255,255,.035);color:var(--muted);padding:8px 11px;border-radius:999px;font-size:11px;font-weight:800;cursor:pointer}.rangeBtn.active{color:var(--gold2);border-color:rgba(200,169,104,.35);background:rgba(200,169,104,.1)}.chartSummary{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px}.sumBox{border:1px solid var(--line);background:rgba(255,255,255,.028);border-radius:18px;padding:14px}.sumBox span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;font-weight:800}.sumBox strong{display:block;margin-top:7px;font-size:18px}.summaryHead{display:flex;align-items:center;justify-content:flex-start;gap:8px;margin-bottom:12px}.summaryHead .label{letter-spacing:.12em;display:flex;align-items:center;gap:6px}.summaryHead .eyeBtn{font-size:14px;padding:0 3px}@media(max-width:640px){.portfolioPair,.chartSummary{grid-template-columns:1fr}.filterBar{width:100%;justify-content:space-between}.rangeBtn{flex:1}}
+.panel{border:1px solid var(--line);border-radius:30px;background:rgba(14,18,27,.78);backdrop-filter:blur(18px);box-shadow:var(--shadow);padding:22px}
+.panelHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}.panelHead h3{font-size:14px;letter-spacing:.08em;text-transform:uppercase}.panelHead span{font-size:12px;color:var(--muted)}
+.signalBox{display:grid;gap:13px}.signalRow{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--line);font-size:14px}.signalRow:last-child{border-bottom:0}.signalRow span{color:var(--muted)}.signalRow strong{font-weight:800}.positionSplit{display:grid;grid-template-columns:1fr 1fr;gap:10px}.positionTile{border:1px solid var(--line);border-radius:16px;background:rgba(255,255,255,.028);padding:13px}.positionTile span{display:block;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;font-weight:850}.positionTile strong{display:block;font-size:22px;margin-top:7px}.ok{color:var(--green)}.danger{color:var(--red)}.blue{color:var(--cyan)}.gold{color:var(--gold2)}
+.kpis{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}.detailBridge{border:1px solid rgba(200,169,104,.18);border-radius:30px;background:linear-gradient(135deg,rgba(18,23,34,.92),rgba(10,13,19,.82));box-shadow:var(--shadow);padding:22px;display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;overflow:hidden;position:relative}.detailBridge:after{content:"";position:absolute;right:-80px;top:-110px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(200,169,104,.18),transparent 63%);pointer-events:none}.detailBridge h3{font-size:15px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:7px}.detailBridge p{color:var(--muted);font-size:13px;line-height:1.55}.detailCards{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px;position:relative;z-index:2}.detailCard{border:1px solid var(--line);background:rgba(255,255,255,.028);border-radius:18px;padding:14px}.detailCard span{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;font-weight:800}.detailCard strong{display:block;margin-top:7px;font-size:18px}.bridgeBtn{border-color:rgba(200,169,104,.38)!important;background:linear-gradient(135deg,rgba(200,169,104,.2),rgba(255,255,255,.035))!important;color:var(--gold2)!important;box-shadow:0 0 22px rgba(200,169,104,.10)}.bridgeBtn:hover{transform:translateY(-1px);box-shadow:0 0 30px rgba(200,169,104,.18)}.detailBridge .bridgeBtn{position:relative;z-index:2;padding:14px 18px;border-radius:18px;display:inline-flex;align-items:center;justify-content:center;min-width:178px}
+.kpi{border:1px solid var(--line);border-radius:24px;background:linear-gradient(180deg,rgba(18,23,34,.8),rgba(10,13,19,.78));box-shadow:0 18px 38px rgba(0,0,0,.28);padding:20px}.kpi span{font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;font-weight:800}.kpi strong{display:block;font-size:25px;margin-top:12px;letter-spacing:-.02em}.kpi small{display:block;color:var(--muted);margin-top:9px;font-size:12px}
+.chartWrap{height:330px}.footer{color:rgba(185,195,210,.55);font-size:12px;text-align:center;padding:8px 0 3px}
+.mobileBrand{display:none}.skeleton{opacity:.62}
+@media(max-width:1050px){.app{grid-template-columns:1fr}.sidebar{display:none}.mobileBrand{display:block}.grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}.detailBridge{grid-template-columns:1fr}.detailBridge .bridgeBtn{width:100%}}
+@media(max-width:640px){.app{padding:12px;gap:12px}.topbar{border-radius:22px;padding:17px;align-items:flex-start;flex-direction:column}.topActions{width:100%;justify-content:space-between}.actionBtn{flex:1;text-align:center;padding:11px 10px}.titleBlock h2{font-size:26px}.topLogo{width:34px;height:34px}.titleBlock h2 small{font-size:10px}.hero{border-radius:24px;padding:20px;min-height:auto}.clientName{font-size:25px}.heroStats{grid-template-columns:1fr;margin-top:22px}.kpis{grid-template-columns:1fr;gap:12px}.detailCards{grid-template-columns:1fr}.detailBridge{border-radius:24px;padding:17px}.panel{border-radius:24px;padding:17px}.chartWrap{height:260px}.statusPill{width:100%;justify-content:center}.mini strong,.kpi strong{font-size:22px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div>
+      <div class="brand">
+        <div class="mark">TL</div>
+        <h1>TRADELINK</h1>
+        <p>Manager by Encik Shuq</p>
+      </div>
+      <nav class="nav">
+        <a class="active" href="dashboard.html">Executive Dashboard</a>
+        <a href="#performanceHistory">Analytics</a>
+        <a href="#page2Detail">Page 2 Detail</a>
+        <a href="controlpanel.html">Control Panel</a>
+      </nav>
+    </div>
+    <div class="sideFoot">
+      Corporate terminal view<br>
+      © 2026 TradeLink Manager
+    </div>
+  </aside>
+
+  <main class="main">
+    <section class="topbar">
+      <div class="titleBlock">
+        <div class="topLogo">TL</div>
+        <div>
+          <div class="mobileBrand label">TRADELINK MANAGER</div>
+          <h2>Trading Dashboard <small>v1</small></h2>
+        </div>
+      </div>
+      <div class="topActions">
+        <div class="statusPill" id="signalPill"><span>MT5 Signal</span><i class="dot"></i><span id="mt5Signal">CONNECTED</span></div>
+        <a class="actionBtn bridgeBtn" href="controlpanel.html">Control Panel →</a>
+        <button class="actionBtn" onclick="openSettings()">Settings</button>
+        <button class="actionBtn logoutBtn" onclick="logout()">Logout</button>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="hero">
+        <div class="cardTitleFlex"><div class="label">Client Portfolio</div></div>
+        <div class="clientName" id="clientName">Admin</div>
+        <div class="clientId" id="clientId">TL0001-Pro</div>
+        <div class="heroStats">
+          <div class="mini portfolioPair">
+            <div>
+              <div class="balanceHead"><span>Balance</span><button class="eyeBtn" id="eyeBalance" onclick="toggleMoney('balance','eyeBalance')" title="Hide / show balance">🙈</button></div>
+              <strong id="balance" class="usdPrefix maskedText" data-raw="0.00" data-masked="1">*******</strong>
+            </div>
+            <div>
+              <span>Floating P/L</span>
+              <strong id="floating" class="profit usdPrefix" data-raw="0.00">0.00</strong>
+            </div>
+          </div>
+          <div class="mini hiddenCard"><span>Equity</span><strong id="equity">0.00</strong></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panelHead"><h3>Account Status</h3><span id="lastUpdate">--</span></div>
+        <div class="signalBox">
+          <div class="signalRow"><span>Active Pair</span><strong id="activePair" class="gold">--</strong></div>
+          <div class="positionSplit">
+            <div class="positionTile"><span>Sell</span><strong id="sellCount" class="danger">0</strong></div>
+            <div class="positionTile"><span>Buy</span><strong id="buyCount" class="blue">0</strong></div>
+          </div>
+          <div class="signalRow"><span>Alert Signal</span><strong class="gold">STANDBY</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="kpis">
+      <div class="kpi"><span>Floating Risk</span><strong id="kpiFloating" class="usdPrefix">0.00</strong><small>Open position exposure</small></div>
+      <div class="kpi"><span>Open Trades</span><strong id="kpiTrades">0</strong><small>Total active positions</small></div>
+    </section>
+
+    <section class="detailBridge" id="page2Detail">
+      <div>
+        <div class="label">Page 2 Detail</div>
+        <h3>Control Panel Gateway</h3>
+        <p>Ringkasan ini jadi perantaraan sebelum masuk ke halaman kawalan trade. Warna dan gaya disamakan dengan dashboard supaya nampak premium dan tidak lari tema.</p>
+        <div class="detailCards">
+          <div class="detailCard"><span>Balance</span><strong id="detailBalance" class="usdPrefix">0.00</strong></div>
+          <div class="detailCard"><span>Equity</span><strong id="detailEquity" class="usdPrefix">0.00</strong></div>
+          <div class="detailCard"><span>MT5 Status</span><strong id="detailSignal" class="gold">CONNECTED</strong></div>
+        </div>
+      </div>
+      <a class="actionBtn bridgeBtn" href="controlpanel.html">Open Control Panel →</a>
+    </section>
+
+    <section class="panel" id="performanceHistory">
+      <div class="panelHead">
+        <h3>Performance History</h3>
+        <div class="filterBar">
+          <button class="rangeBtn active" id="btnDay" onclick="changeRange('day')">Day</button>
+          <button class="rangeBtn" id="btnWeek" onclick="changeRange('week')">Week</button>
+          <button class="rangeBtn" id="btnMonth" onclick="changeRange('month')">Monthly</button>
+        </div>
+      </div>
+      <div class="summaryHead">
+        <div class="label">Profit / Loss Summary <button class="eyeBtn" id="eyeSummary" onclick="toggleSummary()" title="Hide / show amount">🙈</button></div>
+      </div>
+      <div class="chartSummary" id="chartSummary">
+        <div class="sumBox"><span id="rangeLabel">Selected Range</span><strong id="rangePL" class="usdPrefix maskedText" data-raw="0.00" data-masked="1">*******</strong></div>
+        <div class="sumBox"><span>Total Profit</span><strong id="totalProfit" class="usdPrefix maskedText" data-raw="0.00" data-masked="1">*******</strong></div>
+        <div class="sumBox"><span>Total Loss</span><strong id="totalLoss" class="usdPrefix maskedText" data-raw="0.00" data-masked="1">*******</strong></div>
+      </div>
+      <div class="chartWrap" id="chartWrap"><canvas id="liveChart"></canvas></div>
+    </section>
+
+    <div class="footer">TradeLink Manager By Encik Shuq © 2026</div>
+  </main>
+</div>
+
+<script>
+const firebaseConfig = {
+  databaseURL: "https://tradelink-84f02-default-rtdb.asia-southeast1.firebasedatabase.app/"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const savedClient = localStorage.getItem("clientId");
+if(!savedClient){
+  window.location.href = "index.html";
+}
+
+const clientId = savedClient || "TL0001";
+const clientKey = localStorage.getItem("clientKey") || clientId;
+const monitorRef = db.ref("TradeLink/clients/" + clientKey + "/monitor");
+const historyRef = db.ref("TradeLink/clients/" + clientKey + "/history");
+const userRef = db.ref("TradeLink/users/" + clientId);
+
+function money(v){
+  return Number(v || 0).toLocaleString("en-US",{
+    minimumFractionDigits:2,
+    maximumFractionDigits:2
+  });
+}
+
+function setText(id,val){
+  const el = document.getElementById(id);
+  if(el) el.textContent = val;
+}
+
+function setMoney(id,val){
+  const el = document.getElementById(id);
+  if(!el) return;
+  el.dataset.raw = money(val);
+  el.textContent = el.dataset.masked === "1" ? "*******" : money(val);
+  el.classList.toggle("maskedText", el.dataset.masked === "1");
+}
+
+function setPL(id,val){
+  const el = document.getElementById(id);
+  if(!el) return;
+  const n = Number(val || 0);
+  el.dataset.raw = money(n);
+  el.textContent = el.dataset.masked === "1" ? "*******" : money(n);
+  el.classList.toggle("maskedText", el.dataset.masked === "1");
+  el.style.color = n < 0 ? "var(--red)" : "var(--green)";
+}
+
+function updateEye(btnId, masked){
+  const btn = document.getElementById(btnId);
+  if(btn) btn.textContent = masked ? "🙈" : "👁";
+}
+
+function toggleMoney(id, btnId){
+  const el = document.getElementById(id);
+  if(!el) return;
+
+  el.dataset.masked = el.dataset.masked === "1" ? "0" : "1";
+  const masked = el.dataset.masked === "1";
+
+  el.textContent = masked ? "*******" : (el.dataset.raw || "0.00");
+  el.classList.toggle("maskedText", masked);
+
+  if(btnId) updateEye(btnId, masked);
+}
+
+function toggleSummary(){
+  const ids = ["rangePL","totalProfit","totalLoss"];
+  const first = document.getElementById("rangePL");
+  const nextMasked = !(first && first.dataset.masked === "1");
+
+  ids.forEach(id=>{
+    const el = document.getElementById(id);
+    if(!el) return;
+    el.dataset.masked = nextMasked ? "1" : "0";
+    el.textContent = nextMasked ? "*******" : (el.dataset.raw || "0.00");
+    el.classList.toggle("maskedText", nextMasked);
+  });
+
+  updateEye("eyeSummary", nextMasked);
+}
+
+function updateSignal(signal){
+  const pill = document.getElementById("signalPill");
+  const text = document.getElementById("mt5Signal");
+
+  if(text) text.textContent = signal;
+  if(!pill) return;
+
+  pill.classList.remove("autoOff","disconnected");
+
+  if(signal === "AUTO OFF"){
+    pill.classList.add("autoOff");
+  }else if(signal !== "CONNECTED"){
+    pill.classList.add("disconnected");
+  }
+}
+
+function openSettings(){
+  alert("Settings page akan kita sambung selepas dashboard siap.");
+}
+
+function logout(){
+  localStorage.removeItem("clientId");
+  localStorage.removeItem("clientKey");
+  window.location.href = "index.html";
+}
+
+let historyItems = [];
+let activeRange = "day";
+
+const ctx = document.getElementById("liveChart");
+const liveChart = new Chart(ctx,{
+  type:"line",
+  data:{
+    labels:[],
+    datasets:[
+      { label:"Balance %", data:[], borderWidth:2, tension:.38, pointRadius:3 },
+      { label:"Equity %", data:[], borderWidth:2, tension:.38, pointRadius:3 }
+    ]
+  },
+  options:{
+    responsive:true,
+    maintainAspectRatio:false,
+    interaction:{mode:"index",intersect:false},
+    plugins:{
+      legend:{labels:{color:"#b9c3d2", boxWidth:10, usePointStyle:true}},
+      tooltip:{callbacks:{label:(ctx)=>ctx.dataset.label + ": " + Number(ctx.raw || 0).toFixed(2) + "%"}}
+    },
+    scales:{
+      x:{ticks:{display:false}, grid:{color:"rgba(255,255,255,.035)", drawTicks:false}},
+      y:{ticks:{color:"#8d99aa", callback:(v)=>v + "%"}, grid:{color:"rgba(255,255,255,.035)", drawTicks:false}, border:{display:false}}
+    }
+  }
+});
+
+monitorRef.on("value", snap=>{
+  const d = snap.val() || {};
+  const signal = d.mt5_signal || "DISCONNECTED";
+  const trades = Number(d.buy_count || 0) + Number(d.sell_count || 0);
+
+  setMoney("balance", d.balance);
+  setText("equity", money(d.equity));
+  setPL("floating", d.floating_pl);
+  updateSignal(signal);
+
+  setMoney("detailBalance", d.balance);
+  setMoney("detailEquity", d.equity);
+  setText("detailSignal", signal);
+
+  setText("buyCount", d.buy_count || 0);
+  setText("sellCount", d.sell_count || 0);
+  setText("activePair", d.active_pair || d.symbol || d.pair || "XAUUSD");
+  setText("lastUpdate", d.last_update || "--");
+
+  setPL("kpiFloating", d.floating_pl);
+  setText("kpiTrades", trades);
+});
+
+userRef.on("value", snap=>{
+  const u = snap.val() || {};
+  setText("clientName", u.name || "Client Name");
+  setText("clientId", clientId + "-" + (u.package || "BASIC"));
+});
+
+historyRef.on("value", snap=>{
+  const data = snap.val() || {};
+
+  historyItems = Object.keys(data).sort().map(k=>({
+    date:k,
+    dateObj:parseDateKey(k),
+    balance:Number(data[k].balance || 0),
+    equity:Number(data[k].equity || 0),
+    floating_pl:Number(data[k].floating_pl || 0)
+  }));
+
+  renderHistory();
+});
+
+function parseDateKey(key){
+  const p = String(key).split("-");
+  if(p.length === 3) return new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+  return new Date(key);
+}
+
+function getFilteredHistory(){
+  if(!historyItems.length) return [];
+
+  const latest = historyItems[historyItems.length - 1].dateObj;
+  const start = new Date(latest);
+
+  if(activeRange === "day") start.setDate(start.getDate() - 1);
+  else if(activeRange === "week") start.setDate(start.getDate() - 7);
+  else start.setMonth(start.getMonth() - 1);
+
+  return historyItems.filter(x=>x.dateObj >= start);
+}
+
+function percentSeries(items, field){
+  if(!items.length) return [];
+  const base = Number(items[0][field] || 0);
+  return items.map(x=> base ? ((Number(x[field] || 0) - base) / base) * 100 : 0);
+}
+
+function calcPL(items){
+  let rangePL = 0;
+  let totalProfit = 0;
+  let totalLoss = 0;
+
+  if(items.length >= 2){
+    rangePL = Number(items[items.length - 1].balance || 0) - Number(items[0].balance || 0);
+  }
+
+  for(let i=1; i<items.length; i++){
+    const diff = Number(items[i].balance || 0) - Number(items[i-1].balance || 0);
+    if(diff >= 0) totalProfit += diff;
+    else totalLoss += diff;
+  }
+
+  return {rangePL,totalProfit,totalLoss};
+}
+
+function renderHistory(){
+  const items = getFilteredHistory();
+
+  liveChart.data.labels = items.map(x=>x.date);
+  liveChart.data.datasets[0].data = percentSeries(items,"balance");
+  liveChart.data.datasets[1].data = percentSeries(items,"equity");
+  liveChart.update();
+
+  const pl = calcPL(items);
+
+  setText("rangeLabel", activeRange === "day" ? "Daily P/L" : activeRange === "week" ? "Weekly P/L" : "Monthly P/L");
+  setPL("rangePL", pl.rangePL);
+  setPL("totalProfit", pl.totalProfit);
+  setPL("totalLoss", pl.totalLoss);
+}
+
+function changeRange(range){
+  activeRange = range;
+
+  document.querySelectorAll(".rangeBtn").forEach(btn=>btn.classList.remove("active"));
+
+  const activeBtn = document.getElementById(
+    range === "day" ? "btnDay" : range === "week" ? "btnWeek" : "btnMonth"
+  );
+
+  if(activeBtn) activeBtn.classList.add("active");
+
+  renderHistory();
+}
+
+document.addEventListener("DOMContentLoaded",()=>{
+  const balance = document.getElementById("balance");
+  const rangePL = document.getElementById("rangePL");
+  const totalProfit = document.getElementById("totalProfit");
+  const totalLoss = document.getElementById("totalLoss");
+
+  if(balance) balance.dataset.masked = "1";
+  if(rangePL) rangePL.dataset.masked = "1";
+  if(totalProfit) totalProfit.dataset.masked = "1";
+  if(totalLoss) totalLoss.dataset.masked = "1";
+
+  updateEye("eyeBalance", true);
+  updateEye("eyeSummary", true);
+});
+</script>
+</body>
+</html>
