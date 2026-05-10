@@ -199,7 +199,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
-const clientId = localStorage.getItem("clientId") || "TL0001";
+const clientId = "TL0001";
 const monitorRef = db.ref("TradeLink/clients/" + clientId + "/monitor");
 const historyRef = db.ref("TradeLink/clients/" + clientId + "/history");
 
