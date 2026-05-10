@@ -1,1 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>TradeLink Manager | Dashboard</title>
+
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root{
+  --bg:#07090d;
+  --panel:#0e1219;
+  --panel2:#121722;
+  --card:#10151f;
+  --line:rgba(255,255,255,.075);
+  --text:#eef3fb;
+  --muted:#8d99aa;
+  --soft:#b9c3d2;
+  --gold:#c8a968;
+  --gold2:#f1d997;
+  --green:#30d394;
+  --red:#ef6464;
+  --cyan:#73d7ff;
+  --shadow:0 28px 70px rgba(0,0,0,.48);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+body{
+  overflow-x:hidden;
+  background:
+    radial-gradient(circle at 15% 12%, rgba(200,169,104,.12), transparent 30%),
+    radial-gradient(circle at 85% 22%, rgba(115,215,255,.08), transparent 28%),
+    linear-gradient(135deg,#07090d 0%,#090c12 44%,#050609 100%);
+}
+body:before{
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.22;
+  background-image:linear-gradient(rgba(255,255,255,.04) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.04) 1px,transparent 1px);
+  background-size:52px 52px;
+  mask-image:radial-gradient(circle at 50% 18%, black, transparent 72%);
+}
+.app{display:grid;grid-template-columns:280px 1fr;min-height:100vh;padding:22px;gap:22px}
+.sidebar{
+  position:sticky;top:22px;height:calc(100vh - 44px);border:1px solid var(--line);border-radius:28px;
+  background:linear-gradient(180deg,rgba(18,23,34,.92),rgba(9,12,18,.86));
+  box-shadow:var(--shadow);padding:22px;backdrop-filter:blur(18px);display:flex;flex-direction:column;justify-content:space-between;
+}
+.brand{padding:8px 2px 24px;border-bottom:1px solid var(--line)}
+.brand .mark{width:42px;height:42px;border-radius:14px;background:linear-gradient(135deg,var(--gold),#6d5626);display:grid;place-items:center;color:#07090d;font-weight:900;margin-bottom:14px;box-shadow:0 0 28px rgba(200,169,104,.2)}
+.brand h1{font-size:23px;letter-spacing:.08em;font-weight:800;line-height:1.05}
+.brand p{color:var(--muted);font-size:12px;margin-top:7px;letter-spacing:.04em}
+.nav{display:grid;gap:10px;margin-top:22px}
+.nav a{padding:14px 15px;border-radius:16px;text-decoration:none;color:var(--soft);font-size:13px;border:1px solid transparent;background:rgba(255,255,255,.018)}
+.nav a.active{color:var(--gold2);border-color:rgba(200,169,104,.26);background:linear-gradient(90deg,rgba(200,169,104,.12),rgba(255,255,255,.02))}
+.sideFoot{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font-size:12px;line-height:1.55}
+.main{min-width:0;display:flex;flex-direction:column;gap:18px}
+.topbar{
+  min-height:78px;border:1px solid var(--line);border-radius:26px;background:rgba(14,18,27,.72);backdrop-filter:blur(18px);
+  box-shadow:var(--shadow);display:flex;align-items:center;justify-content:space-between;padding:18px 22px;gap:16px
+}
+.titleBlock h2{font-size:24px;font-weight:750;letter-spacing:.01em}.titleBlock p{font-size:13px;color:var(--muted);margin-top:5px}
+.statusPill{display:flex;align-items:center;gap:10px;border:1px solid rgba(48,211,148,.24);background:rgba(48,211,148,.08);color:#bdf7de;padding:11px 15px;border-radius:999px;font-size:12px;font-weight:700;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 18px var(--green)}
+.grid{display:grid;grid-template-columns:1.25fr .75fr;gap:18px}
+.hero{
+  position:relative;overflow:hidden;min-height:250px;border:1px solid rgba(200,169,104,.18);border-radius:30px;
+  background:linear-gradient(135deg,rgba(22,28,40,.95),rgba(10,13,19,.92));box-shadow:var(--shadow);padding:26px
+}
+.hero:after{content:"";position:absolute;right:-90px;top:-120px;width:320px;height:320px;border-radius:50%;background:radial-gradient(circle,rgba(200,169,104,.19),transparent 62%)}
+.label{font-size:11px;color:var(--muted);letter-spacing:.16em;text-transform:uppercase;font-weight:800}.clientName{font-size:32px;font-weight:800;margin-top:15px;letter-spacing:-.02em}.clientId{color:var(--gold2);font-weight:700;margin-top:8px;font-size:14px}.heroStats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:32px;position:relative;z-index:2}.mini{border:1px solid var(--line);background:rgba(255,255,255,.035);border-radius:20px;padding:16px}.mini span{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em}.mini strong{display:block;font-size:20px;margin-top:8px;white-space:nowrap}.mini .profit{color:var(--green)}
+.panel{border:1px solid var(--line);border-radius:30px;background:rgba(14,18,27,.78);backdrop-filter:blur(18px);box-shadow:var(--shadow);padding:22px}
+.panelHead{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}.panelHead h3{font-size:14px;letter-spacing:.08em;text-transform:uppercase}.panelHead span{font-size:12px;color:var(--muted)}
+.signalBox{display:grid;gap:13px}.signalRow{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid var(--line);font-size:14px}.signalRow:last-child{border-bottom:0}.signalRow span{color:var(--muted)}.signalRow strong{font-weight:800}.ok{color:var(--green)}.danger{color:var(--red)}.gold{color:var(--gold2)}
+.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}.kpi{border:1px solid var(--line);border-radius:24px;background:linear-gradient(180deg,rgba(18,23,34,.8),rgba(10,13,19,.78));box-shadow:0 18px 38px rgba(0,0,0,.28);padding:20px}.kpi span{font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;font-weight:800}.kpi strong{display:block;font-size:25px;margin-top:12px;letter-spacing:-.02em}.kpi small{display:block;color:var(--muted);margin-top:9px;font-size:12px}
+.chartWrap{height:330px}.footer{color:rgba(185,195,210,.55);font-size:12px;text-align:center;padding:8px 0 3px}
+.mobileBrand{display:none}.skeleton{opacity:.62}
+@media(max-width:1050px){.app{grid-template-columns:1fr}.sidebar{display:none}.mobileBrand{display:block}.grid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.app{padding:12px;gap:12px}.topbar{border-radius:22px;padding:17px;align-items:flex-start;flex-direction:column}.titleBlock h2{font-size:21px}.hero{border-radius:24px;padding:20px;min-height:auto}.clientName{font-size:25px}.heroStats{grid-template-columns:1fr;margin-top:22px}.kpis{grid-template-columns:1fr;gap:12px}.panel{border-radius:24px;padding:17px}.chartWrap{height:260px}.statusPill{width:100%;justify-content:center}.mini strong,.kpi strong{font-size:22px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div>
+      <div class="brand">
+        <div class="mark">TL</div>
+        <h1>TRADELINK</h1>
+        <p>Manager by Encik Shuq</p>
+      </div>
+      <nav class="nav">
+        <a class="active" href="#">Executive Dashboard</a>
+        <a href="#">Analytics</a>
+        <a href="#">Risk Monitor</a>
+        <a href="#">Trade Control</a>
+      </nav>
+    </div>
+    <div class="sideFoot">
+      Corporate terminal view<br>
+      © 2026 TradeLink Manager
+    </div>
+  </aside>
+
+  <main class="main">
+    <section class="topbar">
+      <div class="titleBlock">
+        <div class="mobileBrand label">TRADELINK MANAGER</div>
+        <h2>Executive Trading Dashboard</h2>
+        <p>Live MT5 account monitoring, performance history and position exposure.</p>
+      </div>
+      <div class="statusPill"><i class="dot"></i><span id="mt5Signal">CONNECTED</span></div>
+    </section>
+
+    <section class="grid">
+      <div class="hero">
+        <div class="label">Client Portfolio</div>
+        <div class="clientName" id="clientName">Ahmad Danial</div>
+        <div class="clientId" id="clientId">TL0001-BASIC</div>
+        <div class="heroStats">
+          <div class="mini"><span>Balance</span><strong id="balance">0.00</strong></div>
+          <div class="mini"><span>Equity</span><strong id="equity">0.00</strong></div>
+          <div class="mini"><span>Floating P/L</span><strong id="floating" class="profit">0.00</strong></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panelHead"><h3>Account Status</h3><span id="lastUpdate">--</span></div>
+        <div class="signalBox">
+          <div class="signalRow"><span>MT5 Signal</span><strong id="mt5Signal2" class="ok">CONNECTED</strong></div>
+          <div class="signalRow"><span>Buy Position</span><strong id="buyCount" class="gold">0</strong></div>
+          <div class="signalRow"><span>Sell Position</span><strong id="sellCount" class="danger">0</strong></div>
+          <div class="signalRow"><span>Alert Signal</span><strong class="gold">STANDBY</strong></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="kpis">
+      <div class="kpi"><span>Total Balance</span><strong id="kpiBalance">0.00</strong><small>Current account capital</small></div>
+      <div class="kpi"><span>Total Equity</span><strong id="kpiEquity">0.00</strong><small>Real-time account value</small></div>
+      <div class="kpi"><span>Floating Risk</span><strong id="kpiFloating">0.00</strong><small>Open position exposure</small></div>
+      <div class="kpi"><span>Open Trades</span><strong id="kpiTrades">0</strong><small>Buy + sell positions</small></div>
+    </section>
+
+    <section class="panel">
+      <div class="panelHead"><h3>Performance History</h3><span>Balance vs Equity</span></div>
+      <div class="chartWrap"><canvas id="liveChart"></canvas></div>
+    </section>
+
+    <div class="footer">TradeLink Manager By Encik Shuq © 2026</div>
+  </main>
+</div>
+
+<script>
+const firebaseConfig = {
+  databaseURL: "https://tradelink-84f02-default-rtdb.asia-southeast1.firebasedatabase.app/"
+};
+
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+const clientId = localStorage.getItem("clientId") || "TL0001";
+const monitorRef = db.ref("TradeLink/clients/" + clientId + "/monitor");
+const historyRef = db.ref("TradeLink/clients/" + clientId + "/history");
+
+function money(v){ return Number(v || 0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function setText(id,val){ const el=document.getElementById(id); if(el) el.textContent=val; }
+function setPL(id,val){
+  const el=document.getElementById(id); if(!el) return;
+  el.textContent = money(val);
+  el.style.color = Number(val) < 0 ? "var(--red)" : "var(--green)";
+}
+function signalClass(el, signal){
+  if(!el) return;
+  el.className = signal === "CONNECTED" ? "ok" : (signal === "AUTO OFF" ? "gold" : "danger");
+}
+
+const ctx = document.getElementById("liveChart");
+const liveChart = new Chart(ctx,{
+  type:"line",
+  data:{ labels:[], datasets:[
+    { label:"Balance", data:[], borderWidth:2, tension:.38, pointRadius:3 },
+    { label:"Equity", data:[], borderWidth:2, tension:.38, pointRadius:3 }
+  ]},
+  options:{
+    responsive:true,
+    maintainAspectRatio:false,
+    interaction:{mode:"index",intersect:false},
+    plugins:{ legend:{labels:{color:"#b9c3d2", boxWidth:10, usePointStyle:true}} },
+    scales:{
+      x:{ ticks:{color:"#8d99aa"}, grid:{color:"rgba(255,255,255,.045)"} },
+      y:{ ticks:{color:"#8d99aa"}, grid:{color:"rgba(255,255,255,.045)"} }
+    }
+  }
+});
+
+monitorRef.on("value", snap=>{
+  const d = snap.val() || {};
+  const signal = d.mt5_signal || "DISCONNECTED";
+  const trades = Number(d.buy_count || 0) + Number(d.sell_count || 0);
+
+  setText("clientName", d.name || "Client Name");
+  setText("clientId", d.client_id || clientId);
+  setText("balance", money(d.balance));
+  setText("equity", money(d.equity));
+  setPL("floating", d.floating_pl);
+  setText("mt5Signal", signal);
+  setText("mt5Signal2", signal);
+  setText("buyCount", d.buy_count || 0);
+  setText("sellCount", d.sell_count || 0);
+  setText("lastUpdate", d.last_update || "--");
+
+  setText("kpiBalance", money(d.balance));
+  setText("kpiEquity", money(d.equity));
+  setPL("kpiFloating", d.floating_pl);
+  setText("kpiTrades", trades);
+
+  signalClass(document.getElementById("mt5Signal2"), signal);
+});
+
+historyRef.on("value", snap=>{
+  const data = snap.val() || {};
+  const labels = Object.keys(data).sort();
+  liveChart.data.labels = labels;
+  liveChart.data.datasets[0].data = labels.map(k=>Number(data[k].balance || 0));
+  liveChart.data.datasets[1].data = labels.map(k=>Number(data[k].equity || 0));
+  liveChart.update();
+});
+</script>
+</body>
+</html>
 
