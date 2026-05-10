@@ -202,6 +202,7 @@ const db = firebase.database();
 const clientId = "TL0001";
 const monitorRef = db.ref("TradeLink/clients/" + clientId + "/monitor");
 const historyRef = db.ref("TradeLink/clients/" + clientId + "/history");
+  const userRef = db.ref("TradeLink/users/" + clientId);
 
 function money(v){ return Number(v || 0).toLocaleString("en-US",{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function setText(id,val){ const el=document.getElementById(id); if(el) el.textContent=val; }
@@ -279,21 +280,7 @@ const liveChart = new Chart(ctx,{
   }
 });
 
-monitorRef.on("value", snap=>{
-  const d = snap.val() || {};
-  const signal = d.mt5_signal || "DISCONNECTED";
-  const trades = Number(d.buy_count || 0) + Number(d.sell_count || 0);
-
-  userRef.on("value", snap => {
-
-  const u = snap.val() || {};
-
-  setText("clientName", u.name || "Client Name");
-
-  setText(
-    "clientId",
-    clientId + "-" + (u.package || "BASIC")
-  );
+const userRef = db.ref("TradeLink/users/" + clientId);
 
 });
   setMoney("balance", d.balance);
@@ -355,13 +342,8 @@ function changeRange(range){
   document.querySelectorAll('.rangeBtn').forEach(b=>b.classList.remove('active'));
   const btn = document.getElementById(range === 'day' ? 'btnDay' : range === 'week' ? 'btnWeek' : 'btnMonth');
   if(btn) btn.classList.add('active');
-  renderHistory();
-}
-historyRef.on("value", snap=>{
-  const data = snap.val() || {};
-  historyItems = Object.keys(data).sort().map(k=>({date:k,dateObj:parseDateKey(k),balance:Number(data[k].balance || 0),equity:Number(data[k].equity || 0),floating_pl:Number(data[k].floating_pl || 0)}));
-  renderHistory();
-  const userRef = db.ref("TradeLink/users/" + clientId);
+  
+  
 
   
 });
